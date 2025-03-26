@@ -1,0 +1,125 @@
+package com.example.deviceapi.model;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.util.List;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class Device {
+    private String neId;
+    private String ipAddr;
+    private String name;
+    private String type;
+    private List<Equipment> equipments;
+}
+
+
+package com.example.deviceapi.model;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.util.Map;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class Equipment {
+    private String equipId;
+    private String name;
+    private String type;
+    private Map<String, String> equipAttributes; // Attributes like clei-no, part-no, etc.
+}
+
+
+package com.example.deviceapi.repository;
+
+import com.example.deviceapi.model.Device;
+import com.example.deviceapi.model.Equipment;
+import org.springframework.stereotype.Repository;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
+@Repository
+public class DeviceRepository {
+
+    private final List<Device> devices = Arrays.asList(
+        new Device("NE001", "192.168.1.1", "Router A", "Router",
+            Arrays.asList(
+                new Equipment("EQ001", "Slot 1", "Slot",
+                    Map.of("clei-no", "1234", "part-no", "5678", "mfg-name", "Cisco", "mfg-date", "2023-01-01", "location", "Rack 1")
+                ),
+                new Equipment("EQ002", "Port 1", "Port",
+                    Map.of("clei-no", "2234", "part-no", "6678", "mfg-name", "Juniper", "mfg-date", "2022-12-15", "location", "Rack 2")
+                )
+            )
+        ),
+        new Device("NE002", "192.168.1.2", "Switch B", "Switch",
+            Arrays.asList(
+                new Equipment("EQ003", "Slot 2", "Slot",
+                    Map.of("clei-no", "3234", "part-no", "7678", "mfg-name", "Huawei", "mfg-date", "2021-11-10", "location", "Rack 3")
+                )
+            )
+        )
+    );
+
+    public List<Device> getAllDevices() {
+        return devices;
+    }
+
+    public List<Device> getAllDeviceConfigurations() {
+        return devices;
+    }
+
+    public List<Equipment> getConfigurationByNeId(String neId) {
+        return devices.stream()
+            .filter(device -> device.getNeId().equalsIgnoreCase(neId))
+            .flatMap(device -> device.getEquipments().stream())
+            .toList();
+    }
+}
+
+
+package com.example.deviceapi.controller;
+
+import com.example.deviceapi.model.Device;
+import com.example.deviceapi.model.Equipment;
+import com.example.deviceapi.repository.DeviceRepository;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/devices")
+public class DeviceController {
+
+    private final DeviceRepository deviceRepository;
+
+    public DeviceController(DeviceRepository deviceRepository) {
+        this.deviceRepository = deviceRepository;
+    }
+
+    // 1️⃣ Get all devices
+    @GetMapping("/getAllDevices")
+    public List<Device> getAllDevices() {
+        return deviceRepository.getAllDevices();
+    }
+
+    // 2️⃣ Get all devices with their equipment details
+    @GetMapping("/getAllDeviceConfiguration")
+    public List<Device> getAllDeviceConfigurations() {
+        return deviceRepository.getAllDeviceConfigurations();
+    }
+
+    // 3️⃣ Get equipment details of a specific device
+    @GetMapping("/getConfiguration/{ne-id}")
+    public List<Equipment> getConfigurationByNeId(@PathVariable("ne-id") String neId) {
+        return deviceRepository.getConfigurationByNeId(neId);
+    }
+}
+
+
